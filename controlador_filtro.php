@@ -1822,11 +1822,11 @@ $totales2 = 'si';
  
 
 <td style="text-align:center">
-<?php 
+<?php
     // Verificar si STATUS_CHECKBOX es "no" o null, UUID está vacío
     // y además VIATICOSOPRO sea "PAGO A PROVEEDOR"
     if (
-        ($row['STATUS_CHECKBOX'] === 'no' || $row['STATUS_CHECKBOX'] === null) && 
+        ($row['STATUS_CHECKBOX'] === 'no' || $row['STATUS_CHECKBOX'] === null) &&
         strlen(trim($row['UUID'])) < 1 &&
         $row['VIATICOSOPRO'] === 'PAGO A PROVEEDOR'
     ) {
@@ -1834,15 +1834,15 @@ $totales2 = 'si';
         echo number_format($valorCalculado, 2, '.', ',');
 
     } elseif (in_array($row['VIATICOSOPRO'], [
-        'VIATICOS', 
-        'REEMBOLSO', 
-        'PAGO A PROVEEDOR CON DOS O MAS FACTURAS', 
+        'VIATICOS',
+        'REEMBOLSO',
+        'PAGO A PROVEEDOR CON DOS O MAS FACTURAS',
         'PAGOS CON UNA SOLA FACTURA'
     ])) {
         $valorNUEVO = $NUEVOTOTAL * 1.46;
         echo number_format($valorNUEVO, 2, '.', ',');
         $PorfaltaDeFactura12 += $valorNUEVO;
-        $totales2 = 'si'; 
+        $totales2 = 'si';
     }
 ?>
 </td>
