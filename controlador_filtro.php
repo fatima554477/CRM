@@ -1134,64 +1134,7 @@ echo $PorfaltaDeFactura; ?>"></td>
 				$database->ingresarTemproal($row['RFC_PROVEEDOR'],$row['MONTO_TOTAL_COTIZACION_ADEUDO'],$row['MONTO_DEPOSITADO'],$row['02SUBETUFACTURAid']);			
 		}
 		
-				// Agrupar por NUMERO_CONSEC_PROVEE
-$agrupados = [];
-foreach ($datos as $row) {
-    $clave = $row['NUMERO_CONSECUTIVO_PROVEE'];
-    $agrupados[$clave][] = $row;
-}
 
-// Ahora recorremos cada grupo por separado
-foreach ($agrupados as $numConsec => $grupo) {
-
-    // Reiniciamos acumuladores por grupo
-    $SUBTOL2i = $SUBTOL2g = 0;
-    $totalf12i = $totalf12g = 0;
-    $totalf12ii = $totalf12gg = 0;
-    $TOTALEE = 0;
-
-    foreach ($grupo as $row) {
-
-        // SUBTOTALES
-        if ($row['ID_RELACIONADO'] == '') {
-            $SUBTOL2i += ($row['subTotal'] > 0) ? $row['subTotal'] : $row['MONTO_FACTURA'];
-        } else {
-            $SUBTOL2g += ($row['subTotal'] > 0) ? $row['subTotal'] : $row['MONTO_FACTURA'];
-        }
-
-        // TOTALES
-        if ($row['ID_RELACIONADO'] == '') {
-            $totalf12i += ($row['totalf'] > 0) ? $row['totalf'] : $row['MONTO_DEPOSITAR'];
-        } else {
-            $totalf12g += ($row['totalf'] > 0) ? $row['totalf'] : $row['MONTO_DEPOSITAR'];
-        }
-    }
-
-    // Ajuste por factura faltante (aplica al grupo entero)
-    if (
-        (strlen(trim($row['UUID'])) < 1) && 
-        (isset($row['STATUS_CHECKBOX']) && $row['STATUS_CHECKBOX'] == 'no')
-    ) {
-        $totalf12ii += $totalf12i * 1.46;
-        $totalf12gg += $totalf12g * 1.46;
-    } else {
-        $totalf12ii += $totalf12i;
-        $totalf12gg += $totalf12g;
-    }
-
-    $PorfaltaDeFactura12ig = ($totalf12ii - $totalf12gg);
-
-    $SICOMPRO = ($row['STATUS_CHECKBOX'] == 'no');
-    $uuidVacio = empty($row['UUID']);
-    $idlleno   = !empty($row['ID_RELACIONADO']);
-
-    if ($uuidVacio && $idlleno && $SICOMPRO) {
-        $TOTALEE += $porfalta2;
-        $NUEVOTOTAL = $PorfaltaDeFactura12ig + ($TOTALEE * 1.46);
-    }
-
-
-}
 
 		
 		
@@ -1723,6 +1666,10 @@ if ($subTotal123 > 0) {
 } 
 
 $subTotal12 +=$MONTO_FACTURAxm2;
+
+if ($row['VIATICOSOPRO'] === 'PAGO A PROVEEDOR') {
+    $subTotalCIERRE += $MONTO_FACTURAxm2;
+}
 echo $MONTO_FACTURAxm;
 	
 	
@@ -1821,32 +1768,33 @@ $totales2 = 'si';
 
  
 
-<td style="text-align:center">
-<?php 
-    // Verificar si STATUS_CHECKBOX es "no" o null, UUID está vacío
-    // y además VIATICOSOPRO sea "PAGO A PROVEEDOR"
-    if (
-        ($row['STATUS_CHECKBOX'] === 'no' || $row['STATUS_CHECKBOX'] === null) && 
-        strlen(trim($row['UUID'])) < 1 &&
-        $row['VIATICOSOPRO'] === 'PAGO A PROVEEDOR'
-    ) {
-        $valorCalculado = $porfalta2 * 1.46;
-        echo number_format($valorCalculado, 2, '.', ',');
 
-    } elseif (in_array($row['VIATICOSOPRO'], [
-        'VIATICOS', 
-        'REEMBOLSO', 
-        'PAGO A PROVEEDOR CON DOS O MAS FACTURAS', 
+
+<td style="text-align:center" id="valorCalculado_<?php echo $row['02SUBETUFACTURAid']; ?>">
+    <?php
+     if (in_array($row['VIATICOSOPRO'], [
+        'VIATICOS',
+        'REEMBOLSO',
+        'PAGO A PROVEEDOR CON DOS O MAS FACTURAS',
         'PAGOS CON UNA SOLA FACTURA'
     ])) {
-        $valorNUEVO = $NUEVOTOTAL * 1.46;
+        $falta_factura = $database->diferenciaPorConsecutivo($row['NUMERO_CONSECUTIVO_PROVEE']);
+        $valorNUEVO = $falta_factura ;
         echo number_format($valorNUEVO, 2, '.', ',');
-        $PorfaltaDeFactura12 += $valorNUEVO;
-        $totales2 = 'si'; 
-    }
-?>
-</td>
+		                   $Porfalta = $valorNUEVO;
+				   $PorfaltaDeFactura12 += $Porfalta ;
+				   
+        $totales2 = 'si';
 
+    }	
+        elseif (($row['STATUS_CHECKBOX'] === 'no' || $row['STATUS_CHECKBOX'] === null) && strlen(trim($row['UUID'])) < 1) {
+            $valorCalculado = $porfalta2 * 1.46;
+            echo number_format($valorCalculado, 2, '.', ',');
+
+        }
+    
+    ?>
+</td>
 
 
 		
@@ -2050,6 +1998,31 @@ if($database->plantilla_filtro($nombreTabla,"MONTO_TOTAL_COTIZACION_ADEUDO",$alt
 
 
 <td style="text-align:center" ><strong style="font-size:16px" >$<?php echo number_format($PorfaltaDeFactura12,2,'.',','); ?></strong></td>
+
+</tr>
+
+<tr>
+
+
+<?php if($totales2 == 'si'){ ?>
+<td style="text-align:right; padding-right:45px;" colspan="<?php echo $colspan2 + 2; ?>"><strong style="font-size:16px">TOTALES CIERRE</strong></td>
+<?php } ?>
+
+
+
+<?php if($database->plantilla_filtro($nombreTabla,"SUBTOTAL",$altaeventos,$DEPARTAMENTO)=="si"){ ?>
+<td style="text-align:center"><strong style="font-size:16px">$<?php echo number_format($subTotalCIERRE,2,'.',','); ?></strong></td>
+<?php } ?>
+
+
+
+
+
+
+
+
+
+
 
 </tr>	
 

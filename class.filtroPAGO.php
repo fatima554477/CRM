@@ -306,8 +306,7 @@ if($sWhere3campo == ""){
 
 
 $sWhere3 .= " order by ".$sWhere3campo;
-
-		$sql="SELECT $campos , 02SUBETUFACTURA.id as 02SUBETUFACTURAid FROM $tables LEFT JOIN $tables2 $sWhere $sWhere3 LIMIT $offset,$per_page";
+                $faltaFacturaExpr = "MAX(CASE WHEN $tables2.UUID='' AND $tables.STATUS_CHECKBOX='no' THEN 1 ELSE 0 END) OVER (PARTITION BY $tables.NUMERO_CONSECUTIVO_PROVEE) AS falta_factura";
 		
 		$query=$this->mysqli->query($sql);
 		$sql1="SELECT $campos , 02SUBETUFACTURA.id as 02SUBETUFACTURAid FROM  $tables LEFT JOIN $tables2 $sWhere $sWhere3 ";
@@ -398,11 +397,66 @@ $sWhere3 .= " order by ".$sWhere3campo;
 
 	}
 
+
+
+public function diferenciaPorConsecutivo($NUMERO_CONSECUTIVO_PROVEE) {
+    // Sanitizar
+    $NUMERO_CONSECUTIVO_PROVEE = $this->mysqli->real_escape_string($NUMERO_CONSECUTIVO_PROVEE);
+    $NUMERO_CONSECUTIVO_PROVEE = (int)$NUMERO_CONSECUTIVO_PROVEE;
+
+    $con = $this->db();
+
+    // 1) Flag de grupo: ¿falta factura en algún registro del consecutivo?
+    //    Criterio: STATUS_CHECKBOX = 'no' o NULL y UUID vacío
+    $sqlFF = "
+        SELECT 1
+        FROM 02SUBETUFACTURA s
+        LEFT JOIN 02XML x ON s.id = x.ultimo_id
+        WHERE s.NUMERO_CONSECUTIVO_PROVEE = '$NUMERO_CONSECUTIVO_PROVEE'
+          AND (s.STATUS_CHECKBOX = 'no' OR s.STATUS_CHECKBOX IS NULL)
+          AND (x.UUID IS NULL OR TRIM(x.UUID) = '')
+        LIMIT 1
+    ";
+    $resFF = mysqli_query($con, $sqlFF);
+    $falta_factura = ($resFF && mysqli_num_rows($resFF) > 0);
+
+    // 2) Agregados: con_relacion vs sin_relacion
+    $VarSUBERES = "
+        SELECT
+            SUM(CASE WHEN s.ID_RELACIONADO IS NULL OR TRIM(s.ID_RELACIONADO) = ''
+                     THEN s.MONTO_DEPOSITAR ELSE 0 END) AS sin_relacion,
+            SUM(CASE WHEN s.ID_RELACIONADO IS NOT NULL AND TRIM(s.ID_RELACIONADO) <> ''
+                     THEN s.MONTO_DEPOSITAR ELSE 0 END) AS con_relacion
+        FROM 02SUBETUFACTURA s
+        WHERE s.NUMERO_CONSECUTIVO_PROVEE = '$NUMERO_CONSECUTIVO_PROVEE'
+          AND s.VIATICOSOPRO IN (
+              'VIATICOS','REEMBOLSO',
+              'PAGO A PROVEEDOR CON DOS O MAS FACTURAS',
+              'PAGOS CON UNA SOLA FACTURA'
+          )
+    ";
+    $QUERYSUBERES = mysqli_query($con, $VarSUBERES);
+    $row = $QUERYSUBERES ? mysqli_fetch_assoc($QUERYSUBERES) : ['sin_relacion' => 0, 'con_relacion' => 0];
+
+    $sin_relacion = (float)($row['sin_relacion'] ?? 0);
+    $con_relacion = (float)($row['con_relacion'] ?? 0);
+
+    // 3) Diferencia base y multiplicador si falta factura en el grupo
+    $base = $con_relacion - $sin_relacion;
+
+    return $falta_factura ? (float)($base * 1.46) : (float)$base;
+}
+
+
+
+
+
 	function setCounter($counter) {
 		$this->counter = $counter;
 	}
 	function getCounter() {
 		return $this->counter;
 	}
+
 }
 ?>
