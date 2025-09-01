@@ -442,53 +442,35 @@ $NUMERO_CONSECUTIVO_PROVEE = (int)$NUMERO_CONSECUTIVO_PROVEE;
 $con = $this->db();
 
 $VarSUBERES = "
-    SELECT  
-        SUM(CASE WHEN ID_RELACIONADO IS NULL OR TRIM(ID_RELACIONADO) = ''
-                 THEN MONTO_DEPOSITAR ELSE 0 END) AS sin_relacion  ,
-        SUM(CASE WHEN ID_RELACIONADO IS NOT NULL AND TRIM(ID_RELACIONADO) <> ''
-                 THEN MONTO_DEPOSITAR ELSE 0 END) AS con_relacion
-    FROM 02SUBETUFACTURA
-    WHERE NUMERO_CONSECUTIVO_PROVEE = '$NUMERO_CONSECUTIVO_PROVEE'
-      AND VIATICOSOPRO IN ('VIATICOS','REEMBOLSO',
-                           'PAGO A PROVEEDOR CON DOS O MAS FACTURAS',
-                           'PAGOS CON UNA SOLA FACTURA')";
+       SELECT
+            SUM(CASE WHEN s.ID_RELACIONADO IS NULL OR TRIM(s.ID_RELACIONADO) = ''
+                     THEN s.MONTO_DEPOSITAR ELSE 0 END) AS sin_relacion,
+            SUM(CASE WHEN s.ID_RELACIONADO IS NOT NULL AND TRIM(s.ID_RELACIONADO) <> ''
+                     THEN s.MONTO_DEPOSITAR ELSE 0 END) AS con_relacion,
+            MAX(CASE WHEN (x.UUID IS NULL OR TRIM(x.UUID) = '')
+                      AND s.STATUS_CHECKBOX = 'no'
+                 THEN 1 ELSE 0 END) AS falta_factura
+        FROM 02SUBETUFACTURA s
+        LEFT JOIN 02XML x ON s.id = x.ultimo_id
+        WHERE s.NUMERO_CONSECUTIVO_PROVEE = '$NUMERO_CONSECUTIVO_PROVEE'
+          AND s.VIATICOSOPRO IN (
+              'VIATICOS','REEMBOLSO',
+              'PAGO A PROVEEDOR CON DOS O MAS FACTURAS',
+              'PAGOS CON UNA SOLA FACTURA'
+          )
+    ";
+    $result = mysqli_query($con, $VarSUBERES);
+    $ROWeR = $result ? mysqli_fetch_assoc($result) : [];
 
-$QUERYSUBERES = mysqli_query($con, $VarSUBERES);
+    $sin_relacion = (float)($ROWeR['sin_relacion'] ?? 0);
+    $con_relacion = (float)($ROWeR['con_relacion'] ?? 0);
+    $PorfaltaDeFacturaSUBERES = $con_relacion - $sin_relacion;
 
-// Obtenemos el único registro de la consulta (suma de montos)
-$ROWeR = $QUERYSUBERES ? mysqli_fetch_assoc($QUERYSUBERES)
-                       : ['sin_relacion' => 0, 'con_relacion' => 0];
+    if (!empty($ROWeR['falta_factura'])) {
+        return (float) $PorfaltaDeFacturaSUBERES * 1.46;
+    }
 
-// Evitar undefined index para claves no incluidas en el SELECT
-$ROWeR += ['UUID' => '', 'STATUS_CHECKBOX' => null];
-
-// Inicializar acumuladores para evitar avisos
-$con_relacion = 0.0;
-$sin_relacion = 0.0;
-
-
-    $sin_relacion = (float)$ROWeR['sin_relacion'];
-
-    $con_relacion = (float)$ROWeR['con_relacion'];
-
-
-
-
-if (
-    (strlen(trim($ROWeR['UUID'])) < 1) && 
-    (isset($ROWeR['STATUS_CHECKBOX']) && $ROWeR['STATUS_CHECKBOX'] == 'no')
-) {
-$PorfaltaDeFacturaSUBERES = $con_relacion - $sin_relacion ;
-return (float) $PorfaltaDeFacturaSUBERES * 1.46 ;
-} else {
-
-$PorfaltaDeFacturaSUBERES = $con_relacion - $sin_relacion ;
-
-return (float) $PorfaltaDeFacturaSUBERES;
-
-
-}
-
+    return (float) $PorfaltaDeFacturaSUBERES;
 }
 
 
