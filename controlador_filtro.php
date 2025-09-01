@@ -1167,31 +1167,26 @@ foreach ($agrupados as $numConsec => $grupo) {
         }
     }
 
-    // Ajuste por factura faltante (aplica al grupo entero)
-    if (
-        (strlen(trim($row['UUID'])) < 1) && 
-        (isset($row['STATUS_CHECKBOX']) && $row['STATUS_CHECKBOX'] == 'no')
-    ) {
-        $totalf12ii += $totalf12i * 1.46;
-        $totalf12gg += $totalf12g * 1.46;
-    } else {
-        $totalf12ii += $totalf12i;
-        $totalf12gg += $totalf12g;
-    }
+      // Ajuste por factura faltante (aplica al grupo entero)
+      $falta_factura = $grupo[0]['falta_factura'] ?? 0;
+      if ($falta_factura == 1) {
+          $totalf12ii += $totalf12i * 1.46;
+          $totalf12gg += $totalf12g * 1.46;
+      } else {
+          $totalf12ii += $totalf12i;
+          $totalf12gg += $totalf12g;
+      }
 
     $PorfaltaDeFactura12ig = ($totalf12ii - $totalf12gg);
 
-    $SICOMPRO = ($row['STATUS_CHECKBOX'] == 'no');
-    $uuidVacio = empty($row['UUID']);
-    $idlleno   = !empty($row['ID_RELACIONADO']);
-
-    if ($uuidVacio && $idlleno && $SICOMPRO) {
-        $TOTALEE += $porfalta2;
-        $NUEVOTOTAL = $PorfaltaDeFactura12ig + ($TOTALEE * 1.46);
+      if ($falta_factura == 1) {
+          $NUEVOTOTAL = $PorfaltaDeFactura12ig + ($TOTALEE * 1.46);
+      } else {
+          $NUEVOTOTAL = $PorfaltaDeFactura12ig + $TOTALEE;
+      }
     }
 
 
-}
 
 		
 		
@@ -1821,31 +1816,26 @@ $totales2 = 'si';
 
  
 
-<td style="text-align:center">
-<?php 
-    // Verificar si STATUS_CHECKBOX es "no" o null, UUID está vacío
-    // y además VIATICOSOPRO sea "PAGO A PROVEEDOR"
-    if (
-        ($row['STATUS_CHECKBOX'] === 'no' || $row['STATUS_CHECKBOX'] === null) && 
-        strlen(trim($row['UUID'])) < 1 &&
-        $row['VIATICOSOPRO'] === 'PAGO A PROVEEDOR'
-    ) {
-        $valorCalculado = $porfalta2 * 1.46;
-        echo number_format($valorCalculado, 2, '.', ',');
-
-    } elseif (in_array($row['VIATICOSOPRO'], [
-        'VIATICOS', 
-        'REEMBOLSO', 
-        'PAGO A PROVEEDOR CON DOS O MAS FACTURAS', 
-        'PAGOS CON UNA SOLA FACTURA'
-    ])) {
-        $valorNUEVO = $NUEVOTOTAL * 1.46;
-        echo number_format($valorNUEVO, 2, '.', ',');
-        $PorfaltaDeFactura12 += $valorNUEVO;
-        $totales2 = 'si'; 
-    }
-?>
-</td>
+  <td style="text-align:center">
+  <?php
+      $PorfaltaDeFacturaSUBERES = ($row['VIATICOSOPRO'] === 'PAGO A PROVEEDOR') ? (float)$porfalta2 : (float)$NUEVOTOTAL;
+      if ($row['falta_factura'] == 1) {
+          $PorfaltaDeFacturaSUBERES *= 1.46;
+      }
+      if ($row['VIATICOSOPRO'] === 'PAGO A PROVEEDOR') {
+          echo number_format($PorfaltaDeFacturaSUBERES, 2, '.', ',');
+      } elseif (in_array($row['VIATICOSOPRO'], [
+          'VIATICOS',
+          'REEMBOLSO',
+          'PAGO A PROVEEDOR CON DOS O MAS FACTURAS',
+          'PAGOS CON UNA SOLA FACTURA'
+      ])) {
+          echo number_format($PorfaltaDeFacturaSUBERES, 2, '.', ',');
+          $PorfaltaDeFactura12 += $PorfaltaDeFacturaSUBERES;
+          $totales2 = 'si';
+      }
+  ?>
+  </td>
 
 
 

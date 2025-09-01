@@ -306,12 +306,13 @@ if($sWhere3campo == ""){
 
 
 $sWhere3 .= " order by ".$sWhere3campo;
+                $faltaFacturaExpr = "MAX(CASE WHEN $tables2.UUID='' AND $tables.STATUS_CHECKBOX='no' THEN 1 ELSE 0 END) OVER (PARTITION BY $tables.NUMERO_CONSECUTIVO_PROVEE) AS falta_factura";
 
-		$sql="SELECT $campos , 02SUBETUFACTURA.id as 02SUBETUFACTURAid FROM $tables LEFT JOIN $tables2 $sWhere $sWhere3 LIMIT $offset,$per_page";
-		
-		$query=$this->mysqli->query($sql);
-		$sql1="SELECT $campos , 02SUBETUFACTURA.id as 02SUBETUFACTURAid FROM  $tables LEFT JOIN $tables2 $sWhere $sWhere3 ";
-		$nums_row=$this->countAll($sql1); 
+                $sql="SELECT $campos, $faltaFacturaExpr, 02SUBETUFACTURA.id as 02SUBETUFACTURAid FROM $tables LEFT JOIN $tables2 $sWhere $sWhere3 LIMIT $offset,$per_page";
+
+                $query=$this->mysqli->query($sql);
+                $sql1="SELECT $campos, $faltaFacturaExpr, 02SUBETUFACTURA.id as 02SUBETUFACTURAid FROM  $tables LEFT JOIN $tables2 $sWhere $sWhere3 ";
+                $nums_row=$this->countAll($sql1);
 		//Set counter
 		$this->setCounter($nums_row);
 		return $query;
