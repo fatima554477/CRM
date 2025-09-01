@@ -424,9 +424,7 @@ public function diferenciaPorConsecutivo($NUMERO_CONSECUTIVO_PROVEE) {
 
     $QUERYSUBE = mysqli_query($con, $VarSUBE);
     while ($ROWe = mysqli_fetch_array($QUERYSUBE)) {
-        if ($ROWe['STATUS_CHECKBOX'] == 'no' && strlen(trim($ROWe['UUID'])) < 1) {
-            $needsFactor = true;
-        }
+
         if ($ROWe['STATUS_CHECKBOX'] == 'no' && strlen(trim($ROWe['UUID'])) < 1) {
             $PorfaltaDeFactura += (float)$ROWe['MONTO_DEPOSITAR'] * 1.46;
         } else {
