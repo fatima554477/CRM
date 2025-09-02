@@ -475,25 +475,18 @@ $sin_relacion = 0.0;
 
 
 
-
 if (
-    (strlen(trim($ROWeR['UUID'])) < 1) && 
-    (isset($ROWeR['STATUS_CHECKBOX']) && $ROWeR['STATUS_CHECKBOX'] == 'no')
+    strlen(trim($ROWeR['UUID'])) < 1 &&
+    isset($ROWeR['STATUS_CHECKBOX']) && $ROWeR['STATUS_CHECKBOX'] === 'no'
 ) {
-$PorfaltaDeFacturaSUBERES = $con_relacion  - $sin_relacion ;
-return (float) $PorfaltaDeFacturaSUBERES * 1.46;
+    $PorfaltaDeFacturaSUBERES = ($sin_relacion - $con_relacion) * 1.46;
 } else {
-
-return (float) $PorfaltaDeFacturaSUBERES;
-
-
-
-
-}
-return (float)  $PorfaltaDeFacturaSUBERES + $PorfaltaDeFactura ;
+    $PorfaltaDeFacturaSUBERES = $sin_relacion - $con_relacion;// o el valor que corresponda
 }
 
+return (float) $PorfaltaDeFacturaSUBERES2 = (float) $PorfaltaDeFactura + (float) $PorfaltaDeFacturaSUBERES;
 
+}
 
 
 	function setCounter($counter) {

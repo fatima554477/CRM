@@ -1,0 +1,4 @@
+AddType application/octet-stream .xls
+AddType application/octet-stream .doc
+AddType application/octet-stream .xlsx
+AddType application/octet-stream .docx
