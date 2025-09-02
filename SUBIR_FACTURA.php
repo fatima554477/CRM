@@ -12,19 +12,6 @@ fecha fatis : 15/04/2025
 <?php
 $connecDB = $conexion->db();
 
-$NUMERO_EVENTO = isset($NUMERO_EVENTO) ? $NUMERO_EVENTO : (isset($_GET['NUMERO_EVENTO']) ? $_GET['NUMERO_EVENTO'] : (isset($_GET['num_evento']) ? $_GET['num_evento'] : ''));
-$NOMBRE_EVENTO = '';
-if ($NUMERO_EVENTO !== '') {
-    $queryNombreEvento = sprintf(
-        "SELECT NOMBRE_EVENTO FROM 04altaeventos WHERE NUMERO_EVENTO = '%s' LIMIT 1",
-        mysqli_real_escape_string($connecDB, $NUMERO_EVENTO)
-    );
-    $resultNombreEvento = mysqli_query($connecDB, $queryNombreEvento);
-    if ($rowNombreEvento = mysqli_fetch_assoc($resultNombreEvento)) {
-        $NOMBRE_EVENTO = $rowNombreEvento['NOMBRE_EVENTO'];
-    }
-}
-
 
 
  $_SESSION['where'] = ISSET($_SESSION['where'])?$_SESSION['where']: " WHERE idRelacion = '".$_SESSION['idPROV']."' ";
@@ -388,20 +375,10 @@ while($rowsube=mysqli_fetch_array($listadosube)){
 				 </div>
 				 </td>
                  </tr>
-				 
-				 
-				 
                  <tr style="background: #d2faf1">
                  <th scope="row"> <label for="validationCustom03" class="form-label">No. DE EVENTO:<br><a style="color:red;font-size:11px">OBLIGATORIO</a></label></th>
                  <td><input type="text" class="form-control" id="validationCustom03" required=""  value="<?php echo $NUMERO_EVENTO; ?>" name="NUMERO_EVENTO" placeholder="No. DE EVENTO"></td>
                  </tr>
-
-                <tr style="background: #d2faf1">
-                <th scope="row"> <label for="NOMBRE_EVENTO" class="form-label">NOMBRE DEL EVENTO:</label></th>
-                <td><input type="text" class="form-control" id="NOMBRE_EVENTO" value="<?php echo $NOMBRE_EVENTO; ?>" name="NOMBRE_EVENTO" readonly></td>
-                </tr>
-				 
-				 
                 
                  <tr style="background:#fcf3cf"> 
                  <th scope="row"> <label for="validationCustom03" class="form-label">CONCEPTO:</label></th>
