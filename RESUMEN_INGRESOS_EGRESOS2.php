@@ -100,7 +100,7 @@ while($ROWap=mysqli_fetch_array($QUERYAvionp)){
 }
 
 
-$VarCOMPROBACION = 'SELECT subTotal, UUID, MONTO_DEPOSITAR, STATUS_CHECKBOX ,MONTO_FACTURA
+$VarCOMPROBACION = 'SELECT subTotal, UUID, MONTO_DEPOSITAR, STATUS_CHECKBOX ,MONTO_FACTURA, Descuento
                     FROM 07COMPROBACION 
                     LEFT JOIN 07XML ON 07COMPROBACION.id = 07XML.`ultimo_id` 
                     WHERE 07COMPROBACION.NUMERO_EVENTO = "'.$NUMERO_EVENTO.'"';
@@ -111,29 +111,42 @@ while($ROWd = mysqli_fetch_array($QUERYCOMPROBACION)){
 if (($ROWd['STATUS_CHECKBOX'] =='no' ) && strlen(trim($ROWd['UUID'])) < 1) {
         $PorfaltaDeFacturaCOMPROBACION += $ROWd['MONTO_DEPOSITAR'] * 1.46;
     }     else {
-        // Si subTotal es válido (no nulo, no vacío y numérico), se usa; si no, se usa MONTO_FACTURA
+  
+        $descuento = (isset($ROWd['Descuento']) && is_numeric($ROWd['Descuento'])) ? $ROWd['Descuento'] : 0;
         if (isset($ROWd['subTotal']) && is_numeric($ROWd['subTotal']) && $ROWd['subTotal'] > 0) {
-            $subTotalCOMPROBACION += $ROWd['subTotal'];
+            $subTotalCOMPROBACION += $ROWd['subTotal'] - $descuento;
         } else {
-            $subTotalCOMPROBACION += $ROWd['MONTO_FACTURA'];
+            $subTotalCOMPROBACION += $ROWd['MONTO_FACTURA'] - $descuento;
         }
     }
 }
 
 
 
+	$VarCOMPROBACIONpropina = 'SELECT  MONTO_PROPINA,IMPUESTO_HOSPEDAJE FROM 07COMPROBACION LEFT JOIN 02XML ON 07COMPROBACION.id = 07XML.`ultimo_id` where 07COMPROBACION.NUMERO_EVENTO ="'.$NUMERO_EVENTO.'" AND 07XML.UUID != ""';  
+	$QUERYCOMPROBACIONP = mysqli_query($con,$VarCOMPROBACIONpropina);
+	$subTotalCOMPROBACIONpropina = 0;
+while($ROWep=mysqli_fetch_array($QUERYCOMPROBACIONP)){
+    if (trim($ROWCC['STATUS_CHECKBOX']) !== 'no') {
+			$montoPropina = $ROWCC['MONTO_PROPINA'] ?: 0;
+            $impuesto = $ROWCC['IMPUESTO_HOSPEDAJE'] ?: 0;
+            $subTotalCOMPROBACIONpropina += $montoPropina + $impuesto;
+	}
+	}
+	
 
 
-$VarCOMPROBACIONpropina = '
-    SELECT MONTO_PROPINA, IMPUESTO_HOSPEDAJE, STATUS_CHECKBOX 
+	
+
+$VarCOMPROBACIONpropina = ' SELECT MONTO_PROPINA, IMPUESTO_HOSPEDAJE, STATUS_CHECKBOX 
     FROM 07COMPROBACION 
     LEFT JOIN 07XML ON 07COMPROBACION.id = 07XML.`ultimo_id` 
     WHERE 07COMPROBACION.NUMERO_EVENTO = "'.$NUMERO_EVENTO.'" 
 ';
 
-$QUERYCOMPROBACIONP = mysqli_query($con, $VarCOMPROBACIONpropina);
+$QUERY = mysqli_query($con, $VarCOMPROBACIONpropina);
 
-while ($ROWdp = mysqli_fetch_array($QUERYCOMPROBACIONP)) {
+while ($ROWdp = mysqli_fetch_array($QUERY)) {
 
     if ($ROWdp['STATUS_CHECKBOX'] !== 'no' ) {
         $subTotalCOMPROBACIONpropina += $ROWdp['MONTO_PROPINA'] + $ROWdp['IMPUESTO_HOSPEDAJE'];
@@ -144,7 +157,7 @@ while ($ROWdp = mysqli_fetch_array($QUERYCOMPROBACIONP)) {
 
 
 
-$VarSUBE = 'SELECT subTotal, UUID, MONTO_DEPOSITAR,ID_RELACIONADO, STATUS_CHECKBOX, MONTO_FACTURA
+$VarSUBE = 'SELECT subTotal, UUID, MONTO_DEPOSITAR,ID_RELACIONADO, STATUS_CHECKBOX, MONTO_FACTURA, Descuento
     FROM 02SUBETUFACTURA 
     LEFT JOIN 02XML ON 02SUBETUFACTURA.id = 02XML.`ultimo_id` 
   
@@ -167,11 +180,12 @@ while ($ROWe = mysqli_fetch_array($QUERYSUBE)) {
     }  
 
     else {
+		  $descuento = (isset($ROWe['Descuento']) && is_numeric($ROWe['Descuento'])) ? $ROWe['Descuento'] : 0;
        
         if (isset($ROWe['subTotal']) && is_numeric($ROWe['subTotal']) && $ROWe['subTotal'] > 0) {
-            $subTotalSUBETUFACTURA += $ROWe['subTotal'];
+            $subTotalSUBETUFACTURA += $ROWe['subTotal'] - $descuento;
         } else {
-            $subTotalSUBETUFACTURA += $ROWe['MONTO_FACTURA'];
+            $subTotalSUBETUFACTURA += $ROWe['MONTO_FACTURA'] - $descuento;
         }
     }
 }
@@ -216,7 +230,7 @@ while ($ROWeR = mysqli_fetch_array($QUERYSUBERES)) {
 
 
 
-$VarSUBE2 = 'SELECT subTotal, UUID, MONTO_DEPOSITAR ,STATUS_CHECKBOX ,MONTO_FACTURA
+$VarSUBE2 = 'SELECT subTotal, UUID, MONTO_DEPOSITAR ,STATUS_CHECKBOX ,MONTO_FACTURA, Descuento
             FROM 02SUBETUFACTURA 
             LEFT JOIN 02XML ON 02SUBETUFACTURA.id = 02XML.`ultimo_id` 
             WHERE 02SUBETUFACTURA.NUMERO_EVENTO = "'.$NUMERO_EVENTO.'" 
@@ -231,11 +245,12 @@ while ($ROWe2 = mysqli_fetch_array($QUERYSUBE2)) {
     } 
 
     else {
+		$descuento = (isset($ROWe2['Descuento']) && is_numeric($ROWe2['Descuento'])) ? $ROWe2['Descuento'] : 0;
   
         if (isset($ROWe2['subTotal']) && is_numeric($ROWe2['subTotal']) && $ROWe2['subTotal'] > 0) {
-            $subTotalSUBETUFACTURA2 += $ROWe2['subTotal'];
+            $subTotalSUBETUFACTURA2 += $ROWe2['subTotal']- $descuento;
         } else {
-            $subTotalSUBETUFACTURA2 += $ROWe2['MONTO_FACTURA'];
+            $subTotalSUBETUFACTURA2 += $ROWe2['MONTO_FACTURA']- $descuento;
         }
     }
 }
@@ -353,7 +368,8 @@ $GTOTALBONO_VIATICO = $subBONOtotal1 + $subVIATICOtotal1;
 $diferenciaPorFaltaDeFactura = $PorfaltaDeFacturaSUBERES - $PorfaltaDeFacturaSUBE;
 $diferenciaSubTotal = $subTotalSUBETUFACTURARES - $subTotalSUBETUFACTURA;
 $INGRESOS = $TOTAINGRESOS + $TOTAINGRESOS2;
-$subTotalPROPINAOSERVICIO = $subTotalTiketspropina + $subTotalAVIONpropina + $subTotalCOMPROBACIONpropina  +$subTotalSUBETUFACTURApropina + $subTotalSUBETUFACTURApropina2;
+$subTotalPROPINAOSERVICIO = $subTotalTiketspropina + $subTotalAVIONpropina + $subTotalCOMPROBACIONpropina +$subTotalSUBETUFACTURApropina + $subTotalSUBETUFACTURApropina2;
+
 $PorfaltaDeFactura = $PorfaltaDeFacturaSession > 0
     ? $PorfaltaDeFacturaSession
     : ($PorfaltaDeFacturaCOMPROBACION + $PorfaltaDeFacturaSession);
@@ -442,10 +458,10 @@ EVENTO SIN IMPUESTOS  <a style="color:red;font:12px">&nbsp;(INFORMATIVO)</a></td
 <td style="background:#efdcf0;text-align:right;">SERVICIO O PROPINA  MAS IMPUESTO <br>SOBRE HOSPEDAJE , IMPUESTO DE SANEAMIENTO</td>
 
     <td style="background:#efdcf0"><?php 
-        $totalPROPIS = $subTotalPROPINAOSERVICIO + $subTotalPROPINAOSERVICIO2;
+        $totalPROPIS = $subTotalPROPINAOSERVICIO + $subTotalPROPINAOSERVICIO2 + $subTotalCOMPROBACIONpropina;
         echo '$ ' . number_format($totalPROPIS, 2, '.', ','); 
     ?></td>
-</tr
+</tr>
 
 
 
