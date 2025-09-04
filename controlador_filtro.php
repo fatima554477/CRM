@@ -569,7 +569,7 @@ if($database->plantilla_filtro($nombreTabla,"total",$altaeventos,$DEPARTAMENTO)=
 
 <th style="background:#f16c4f;text-align:center">46% PERDIDA DE COSTO FISCAL</th>
 <?php if($database->variablespermisos('','PAGOS_QUITARPP','ver')=='si'){ ?>
-<th style="background:#c6eaaa;text-align:center">SIN 46%</th>
+<th style="background:#c6eaaa;text-align:center">ID <br>RELACIONADO</th>
 <?php } ?>
 <th style="background:#c9e8e8;text-align:center"></th>
 <th style="background:#c9e8e8;text-align:center"></th>
@@ -1665,12 +1665,24 @@ if ($subTotal123 > 0) {
     $MONTO_FACTURAxm2 = ($MONTO_FACTURA123);
 } 
 
+
+
+// Add to subTotalCIERRE only for provider payments with approved status and existing UUID
 $subTotal12 +=$MONTO_FACTURAxm2;
 
-if ($row['VIATICOSOPRO'] === 'PAGO A PROVEEDOR') {
+if (
+    $row['VIATICOSOPRO'] === 'PAGO A PROVEEDOR'
+    && !empty($row['UUID'])
+) {
     $subTotalCIERRE += $MONTO_FACTURAxm2;
+
+    if ($row['VIATICOSOPRO'] === 'PAGO A PROVEEDOR' && $row['STATUS_CHECKBOX'] === 'si') {
+        $subTotalCIERRE2 += $MONTO_FACTURAxm2;
+    }
 }
-echo $MONTO_FACTURAxm;
+
+ echo number_format((float)$MONTO_FACTURAxm2, 2, '.', ','); 
+
 	
 	
 	$totales2 = 'si';
@@ -1781,7 +1793,7 @@ $totales2 = 'si';
         $PorfaltaDeFacturaSUBERES2 = $database->diferenciaPorConsecutivo($row['NUMERO_CONSECUTIVO_PROVEE']);
         $valorNUEVO = $PorfaltaDeFacturaSUBERES2 ;
         echo number_format($valorNUEVO, 2, '.', ',');
-		                   $Porfalta = $valorNUEVO;
+		                   $Porfalta = $valorNUEVO + $valorCalculado;
 				   $PorfaltaDeFactura12 += $Porfalta ;
 				   
         $totales2 = 'si';
@@ -1799,35 +1811,40 @@ $totales2 = 'si';
 
 		
 <?php if($database->variablespermisos('','PAGOS_QUITARPP','ver')=='si'){ ?>
-<td style="text-align:center; background:<?php 
-    if(strlen($row['UUID']) < 1) {
-        if($row["STATUS_CHECKBOX"]=='si') { 
-            echo '#ceffcc'; 
-        } else { 
-            echo '#e9d8ee'; 
+<?php $excluirViaticos = ['VIATICOS','REEMBOLSO','PAGO A PROVEEDOR CON DOS O MAS FACTURAS','PAGOS CON UNA SOLA FACTURA']; ?>
+<td style="text-align:center; background:<?php
+    if(strlen($row['UUID']) < 1 && !in_array($row['VIATICOSOPRO'], $excluirViaticos)) {
+        if($row["STATUS_CHECKBOX"]=='si') {
+            echo '#ceffcc';
+        } else {
+            echo '#e9d8ee';
         }
+    } elseif(strlen($row['UUID']) < 1 && in_array($row['VIATICOSOPRO'], $excluirViaticos)) {
+        echo '#ceffcc';
     } else {
-        echo '#f0f0f0'; 
+        echo '#f0f0f0';
     }
 ?>" id="color_CHECKBOX<?php echo $row["02SUBETUFACTURAid"]; ?>">
     <span id="buscanumero<?php echo $row["02SUBETUFACTURAid"]; ?>">
-        <?php if(strlen($row['UUID']) < 1): ?>
+        <?php if(strlen($row['UUID']) < 1 && !in_array($row['VIATICOSOPRO'], $excluirViaticos)): ?>
             <?php
             // Verificar permiso de modificación
             $permiso_modificar = $database->variablespermisos('','PAGOS_QUITARPP','modificar') == 'si';
             $disabled = ($row["STATUS_CHECKBOX"] == 'si' && !$permiso_modificar) ? 'disabled' : '';
             ?>
-            
-<input type="checkbox" style="width:30PX;" class="form-check-input" 
-    id="STATUS_CHECKBOX<?php echo $row["02SUBETUFACTURAid"]; ?>"  
-    name="STATUS_CHECKBOX<?php echo $row["02SUBETUFacturaid"]; ?>" 
-    value="<?php echo $row["02SUBETUFACTURAid"]; ?>" 
-    onclick="STATUS_CHECKBOX(<?php echo $row['02SUBETUFACTURAid']; ?>, <?php echo $permiso_modificar ? 'true' : 'false'; ?>)" 
+
+<input type="checkbox" style="width:30PX;" class="form-check-input"
+    id="STATUS_CHECKBOX<?php echo $row["02SUBETUFACTURAid"]; ?>"
+    name="STATUS_CHECKBOX<?php echo $row["02SUBETUFacturaid"]; ?>"
+    value="<?php echo $row["02SUBETUFACTURAid"]; ?>"
+    onclick="STATUS_CHECKBOX(<?php echo $row['02SUBETUFACTURAid']; ?>, <?php echo $permiso_modificar ? 'true' : 'false'; ?>)"
     <?php if($row["STATUS_CHECKBOX"]=='si') echo "checked"; ?>
     <?php echo $disabled; ?>
 />
-        <?php else: ?>
+        <?php elseif(strlen($row['UUID']) >= 1): ?>
             <span style="color:#999;">CON XML </span>
+        <?php else: ?>
+            <span style="font-weight:bold; color:#000;"><?php echo $row['NUMERO_CONSECUTIVO_PROVEE']; ?></span>
         <?php endif; ?>
     </span>
 </td>
@@ -1962,7 +1979,7 @@ if($database->plantilla_filtro($nombreTabla,"MONTO_TOTAL_COTIZACION_ADEUDO",$alt
 
 
 <?php if($totales2 == 'si'){ ?>
-<td style="text-align:right; padding-right:45px;" colspan="<?php echo $colspan2 + 2; ?>"><strong style="font-size:16px">TOTALES XML</strong></td>
+<td style="text-align:right; padding-right:45px;" colspan="<?php echo $colspan2 + 2; ?>"><strong style="font-size:16px">TOTAL TOTAL CON Y SIN XML</strong></td>
 <?php } ?>
 
 
@@ -1996,8 +2013,8 @@ if($database->plantilla_filtro($nombreTabla,"MONTO_TOTAL_COTIZACION_ADEUDO",$alt
 <td style="text-align:center" ><strong style="font-size:16px" >$<?php echo number_format($totalf12,2,'.',','); ?></strong></td>
 <?php } ?>
 
-
 <td style="text-align:center" ><strong style="font-size:16px" >$<?php echo number_format($PorfaltaDeFactura12,2,'.',','); ?></strong></td>
+<?php $_SESSION['PorfaltaDeFactura12'] = $PorfaltaDeFactura12; ?>
 
 </tr>
 
@@ -2005,13 +2022,36 @@ if($database->plantilla_filtro($nombreTabla,"MONTO_TOTAL_COTIZACION_ADEUDO",$alt
 
 
 <?php if($totales2 == 'si'){ ?>
-<td style="text-align:right; padding-right:45px;" colspan="<?php echo $colspan2 + 2; ?>"><strong style="font-size:16px">TOTALES CIERRE</strong></td>
+<td style="text-align:right; padding-right:45px;" colspan="<?php echo $colspan2 + 2; ?>"><strong style="font-size:16px">TOTAL SOLO CON XML</strong></td>
 <?php } ?>
 
 
 
 <?php if($database->plantilla_filtro($nombreTabla,"SUBTOTAL",$altaeventos,$DEPARTAMENTO)=="si"){ ?>
-<td style="text-align:center"><strong style="font-size:16px">$<?php echo number_format($subTotalCIERRE,2,'.',','); ?></strong></td>
+<style>
+  .celda-total {
+      text-align: center;
+      background: #eef6ff;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      font-size: 18px;
+      font-weight: bold;
+      color: #1a5276;
+      font-family: "Segoe UI", Arial, sans-serif;
+      transition: transform 0.2s ease;
+  }
+  .celda-total:hover {
+      transform: scale(1.05);
+      background: #d6eaff;
+  }
+</style>
+
+<td class="celda-total">
+   $<?php echo number_format(($subTotalCIERRE + $subTotalCIERRE2), 2, '.', ','); ?>
+</td>
+
+
 <?php } ?>
 
 
@@ -2025,6 +2065,54 @@ if($database->plantilla_filtro($nombreTabla,"MONTO_TOTAL_COTIZACION_ADEUDO",$alt
 
 
 </tr>	
+
+<tr>
+
+
+<?php if($totales2 == 'si'){ ?>
+<td style="text-align:right; padding-right:45px;" colspan="<?php echo $colspan2 + 2; ?>"><strong style="font-size:16px">TOTAL XML CON DESCUENTO</strong></td>
+<?php } ?>
+
+
+
+<?php if($database->plantilla_filtro($nombreTabla,"SUBTOTAL",$altaeventos,$DEPARTAMENTO)=="si"){ ?>
+<style>
+  .celda-total {
+      text-align: center;
+      background: #FCC6BB;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      font-size: 18px;
+      font-weight: bold;
+      color: #1a5276;
+      font-family: "Segoe UI", Arial, sans-serif;
+      transition: transform 0.2s ease;
+  }
+  .celda-total:hover {
+      transform: scale(1.05);
+      background:#FCC6BB;
+  }
+</style>
+
+<td class="celda-total">
+   $<?php echo number_format(($subTotalCIERRE + $subTotalCIERRE2 - $Descuento12), 2, '.', ','); ?>
+</td>
+
+
+<?php } ?>
+
+
+
+
+
+
+
+
+
+
+
+</tr>
 
                 </tbody>
             </table>

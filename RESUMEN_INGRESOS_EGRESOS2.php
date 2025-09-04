@@ -1,3 +1,11 @@
+
+<?php
+if (!isset($_SESSION)) {
+    session_start();
+}
+$PorfaltaDeFacturaSession = isset($_SESSION['PorfaltaDeFactura12']) ? $_SESSION['PorfaltaDeFactura12'] : 0;
+?>
+
 <script>
 
 
@@ -136,7 +144,7 @@ while ($ROWdp = mysqli_fetch_array($QUERYCOMPROBACIONP)) {
 
 
 
-$VarSUBE = 'SELECT subTotal, UUID, MONTO_DEPOSITAR,ID_RELACIONADO, STATUS_CHECKBOX, MONTO_FACTURA,VIATICOSOPRO
+$VarSUBE = 'SELECT subTotal, UUID, MONTO_DEPOSITAR,ID_RELACIONADO, STATUS_CHECKBOX, MONTO_FACTURA
     FROM 02SUBETUFACTURA 
     LEFT JOIN 02XML ON 02SUBETUFACTURA.id = 02XML.`ultimo_id` 
   
@@ -173,7 +181,7 @@ while ($ROWe = mysqli_fetch_array($QUERYSUBE)) {
 
 /////////////////////////////////////////////nuevo///////////////////////////////////////////
 
-$VarSUBEres = 'SELECT subTotal, UUID, MONTO_DEPOSITAR,ID_RELACIONADO, STATUS_CHECKBOX, MONTO_FACTURA,VIATICOSOPRO
+$VarSUBERES = 'SELECT subTotal, UUID, MONTO_DEPOSITAR,NUMERO_CONSECUTIVO_PROVEE, STATUS_CHECKBOX, MONTO_FACTURA
     FROM 02SUBETUFACTURA 
     LEFT JOIN 02XML ON 02SUBETUFACTURA.id = 02XML.`ultimo_id` 
   
@@ -183,27 +191,28 @@ $VarSUBEres = 'SELECT subTotal, UUID, MONTO_DEPOSITAR,ID_RELACIONADO, STATUS_CHE
         "VIATICOS", 
         "PAGO A PROVEEDOR CON DOS O MAS FACTURAS",
         "PAGOS CON UNA SOLA FACTURA"
-    ) AND 02SUBETUFACTURA.ID_RELACIONADO != ""';
+    ) AND 02SUBETUFACTURA.NUMERO_CONSECUTIVO_PROVEE != ""';
 
-$QUERYSUBEres = mysqli_query($con, $VarSUBEres);
+$QUERYSUBERES = mysqli_query($con, $VarSUBERES);
 
 
 
-while ($ROWeres = mysqli_fetch_array($QUERYSUBEres)) {
+while ($ROWeR = mysqli_fetch_array($QUERYSUBERES)) {
     // Verificar condiciones para factura faltante
-    if ($ROWeres['STATUS_CHECKBOX'] == 'no'  && strlen(trim($ROWeres['UUID'])) < 1) {
-        $PorfaltaDeFacturaSUBEres += $ROWeres['MONTO_DEPOSITAR'] * 1.46;
+    if ($ROWeR['STATUS_CHECKBOX'] == 'no'  && strlen(trim($ROWeR['UUID'])) < 1) {
+        $PorfaltaDeFacturaSUBERES += $ROWeR['MONTO_DEPOSITAR'] * 1.46;
     }  
 
     else {
        
-        if (isset($ROWeres['subTotal']) && is_numeric($ROWeres['subTotal']) && $ROWeres['subTotal'] > 0) {
-            $subTotalSUBETUFACTURAres += $ROWeres['subTotal'];
+        if (isset($ROWeR['subTotal']) && is_numeric($ROWeR['subTotal']) && $ROWeR['subTotal'] > 0) {
+            $subTotalSUBETUFACTURARES += $ROWeR['subTotal'];
         } else {
-            $subTotalSUBETUFACTURAres += $ROWeres['MONTO_FACTURA'];
+            $subTotalSUBETUFACTURARES += $ROWeR['MONTO_FACTURA'];
         }
     }
 }
+
 
 
 
@@ -345,7 +354,9 @@ $diferenciaPorFaltaDeFactura = $PorfaltaDeFacturaSUBERES - $PorfaltaDeFacturaSUB
 $diferenciaSubTotal = $subTotalSUBETUFACTURARES - $subTotalSUBETUFACTURA;
 $INGRESOS = $TOTAINGRESOS + $TOTAINGRESOS2;
 $subTotalPROPINAOSERVICIO = $subTotalTiketspropina + $subTotalAVIONpropina + $subTotalCOMPROBACIONpropina  +$subTotalSUBETUFACTURApropina + $subTotalSUBETUFACTURApropina2;
-$PorfaltaDeFactura = $PorfaltaDeFacturaSUBE + $PorfaltaDeFacturaCOMPROBACION +  $PorfaltaDeFacturaSUBERES ;
+$PorfaltaDeFactura = $PorfaltaDeFacturaSession > 0
+    ? $PorfaltaDeFacturaSession
+    : ($PorfaltaDeFacturaCOMPROBACION + $PorfaltaDeFacturaSession);
 $GTotalAvioComSube = $subTotalAVION + $subTotalCOMPROBACION + $subTotalSUBETUFACTURA + $subTotalSUBETUFACTURA2 +  $subTotalTikets+ $subTotalPROPINAOSERVICIO + $PorfaltaDeFactura+$subTotalVheiculo+$subTotalmaterial+$subTotapapeleria+$subTotaOFICINA+$subTotaBOTIQUIN+$subPERSONALtotal+$GTOTALBONO_VIATICO + $diferenciaSubTotal;
 
 
@@ -501,9 +512,13 @@ EVENTO SIN IMPUESTOS  <a style="color:red;font:12px">&nbsp;(INFORMATIVO)</a></td
 
 
 <tr>
-<td style="background:#efdcf0;text-align:right;">46% PERDIDA DE COSTO FISCAL</td>
-<td style="background:#efdcf0"> <?php ECHO '$ '. number_format($PorfaltaDeFactura,2,'.',','); ?>
-</td>
+  <td style="background:#efdcf0;text-align:right;">46% PERDIDA DE COSTO FISCAL</td>
+  <td style="background:#efdcf0">
+    <?php 
+      $totalPerdida = (float)$PorfaltaDeFactura + (float)$PorfaltaDeFacturaCOMPROBACION;
+      echo '$ ' . number_format($totalPerdida, 2, '.', ','); 
+    ?>
+  </td>
 </tr>
 
 
