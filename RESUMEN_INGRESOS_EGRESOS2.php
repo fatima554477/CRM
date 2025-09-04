@@ -138,20 +138,6 @@ while($ROWep=mysqli_fetch_array($QUERYCOMPROBACIONP)){
 
 	
 
-$VarCOMPROBACIONpropina = ' SELECT MONTO_PROPINA, IMPUESTO_HOSPEDAJE, STATUS_CHECKBOX 
-    FROM 07COMPROBACION 
-    LEFT JOIN 07XML ON 07COMPROBACION.id = 07XML.`ultimo_id` 
-    WHERE 07COMPROBACION.NUMERO_EVENTO = "'.$NUMERO_EVENTO.'" 
-';
-
-$QUERY = mysqli_query($con, $VarCOMPROBACIONpropina);
-
-while ($ROWdp = mysqli_fetch_array($QUERY)) {
-
-    if ($ROWdp['STATUS_CHECKBOX'] !== 'no' ) {
-        $subTotalCOMPROBACIONpropina += $ROWdp['MONTO_PROPINA'] + $ROWdp['IMPUESTO_HOSPEDAJE'];
-    } 
-}
 
 
 
