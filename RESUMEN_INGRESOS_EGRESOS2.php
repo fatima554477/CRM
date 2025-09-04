@@ -126,7 +126,7 @@ if (($ROWd['STATUS_CHECKBOX'] =='no' ) && strlen(trim($ROWd['UUID'])) < 1) {
 	$VarCOMPROBACIONpropina = 'SELECT  MONTO_PROPINA,IMPUESTO_HOSPEDAJE FROM 07COMPROBACION LEFT JOIN 02XML ON 07COMPROBACION.id = 07XML.`ultimo_id` where 07COMPROBACION.NUMERO_EVENTO ="'.$NUMERO_EVENTO.'" AND 07XML.UUID != ""';  
 	$QUERYCOMPROBACIONP = mysqli_query($con,$VarCOMPROBACIONpropina);
 	$subTotalCOMPROBACIONpropina = 0;
-while($ROWep=mysqli_fetch_array($QUERYCOMPROBACIONP)){
+while($ROWCC = mysqli_fetch_array($QUERYCOMPROBACIONP)){
     if (trim($ROWCC['STATUS_CHECKBOX']) !== 'no') {
 			$montoPropina = $ROWCC['MONTO_PROPINA'] ?: 0;
             $impuesto = $ROWCC['IMPUESTO_HOSPEDAJE'] ?: 0;
